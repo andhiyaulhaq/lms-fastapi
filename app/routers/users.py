@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.crud.user import (
+from app.crud.user import (  # get_user_by_id,
     create_user,
     get_user_by_email,
-    get_user_by_id,
     get_user_by_username,
     update_user,
     verify_password,
@@ -20,13 +19,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("/register", response_model=UserOut, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     if get_user_by_username(db, user.username):
-        raise HTTPException(status_code=400, detail="Username already in use")
+        raise HTTPException(status_code=400, detail="Username already exists")
     if get_user_by_email(db, user.email):
-        raise HTTPException(status_code=400, detail="Email already in use")
+        raise HTTPException(status_code=400, detail="Email already exists")
     try:
         return create_user(db, user)
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @router.post("/login", response_model=Token)
@@ -35,7 +34,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     if not db_user or not verify_password(
         credentials.password, db_user.hashed_password
     ):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
 
     token = create_access_token({"sub": str(db_user.id)})
     return {"access_token": token, "token_type": "bearer"}
@@ -55,6 +54,8 @@ def update_profile(
     try:
         return update_user(db, current_user.id, updates)
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except IntegrityError:
-        raise HTTPException(status_code=400, detail="Username or email already taken")
+        raise HTTPException(
+            status_code=400, detail="Username or email already taken"
+        ) from e
