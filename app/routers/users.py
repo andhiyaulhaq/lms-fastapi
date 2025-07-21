@@ -13,7 +13,7 @@ from app.dependencies import get_current_user, get_db
 from app.schemas.user import Token, UserCreate, UserLogin, UserOut, UserUpdate
 from app.utils.auth import create_access_token
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post("/register", response_model=UserOut, status_code=201)
