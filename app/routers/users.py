@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.crud.enrollment import get_user_enrollments
 from app.crud.user import (  # get_user_by_id,
     create_user,
     get_user_by_email,
@@ -10,6 +11,8 @@ from app.crud.user import (  # get_user_by_id,
     verify_password,
 )
 from app.dependencies import get_current_user, get_db
+from app.models.user import User
+from app.schemas.enrollment import EnrollmentOut
 from app.schemas.user import Token, UserCreate, UserLogin, UserOut, UserUpdate
 from app.utils.auth import create_access_token
 
@@ -59,3 +62,10 @@ def update_profile(
         raise HTTPException(
             status_code=400, detail="Username or email already taken"
         ) from e
+
+
+@router.get("/me/enrollments", response_model=list[EnrollmentOut])
+def list_my_enrollments(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    return get_user_enrollments(db, current_user.id)
